@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #1e1e1e;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 1100px;
+    background: #e9e3dc;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+/* Header */
+.top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+/* Layout */
+.main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Timeline */
+.timeline {
+    border-left: 2px solid #333;
+    padding-left: 15px;
+}
+
+.time {
+    margin: 15px 0;
+    font-weight: bold;
+}
+
+.event {
+    background: #fff;
+    padding: 5px 10px;
+    border-radius: 6px;
+    margin-left: 10px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+/* Habit Checklist */
+.habits {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.habit {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #ccc;
+    margin-right: 10px;
+}
+
+.habit.active .dot {
+    background: red;
+}
+
+/* Progress Circle */
+.progress {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.circle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: conic-gradient(red 0deg, red 0deg, #ccc 0deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inner {
+    width: 100px;
+    height: 100px;
+    background: #e9e3dc;
+    border-radius: 50%;
+}
+
+/* Footer */
+.footer {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 30px;
+    font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="top">
+        <div>
+            <div><strong>TODAY'S DASHBOARD</strong></div>
+            <div>FEB 23</div>
+        </div>
+        <div><strong>DAILY PROGRESS</strong></div>
+    </div>
+
+    <div class="main">
+
+        <!-- Timeline -->
+        <div class="timeline" id="timeline">
+            <div class="time">8AM <span class="event">Event</span></div>
+            <div class="time">10AM</div>
+            <div class="time">12PM <span class="event">Event 2</span></div>
+            <div class="time">2PM</div>
+            <div class="time">4PM</div>
+        </div>
+
+        <!-- Habits + Progress -->
+        <div>
+            <h3>HABIT CHECKLIST</h3>
+
+            <div class="habits" id="habits">
+                <div class="habit"><div class="dot"></div>Habit 1</div>
+                <div class="habit"><div class="dot"></div>Habit 2</div>
+                <div class="habit"><div class="dot"></div>Habit 3</div>
+                <div class="habit"><div class="dot"></div>Habit 4</div>
+                <div class="habit"><div class="dot"></div>Habit 5</div>
+            </div>
+
+            <div class="progress">
+                <div class="circle" id="circle">
+                    <div class="inner"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <div>WEEKLY VIEW</div>
+        <div>MONTH VIEW</div>
+    </div>
+
+</div>
+
+<script>
+const habits = document.querySelectorAll(".habit");
+const circle = document.getElementById("circle");
+
+function updateProgress() {
+    const total = habits.length;
+    const completed = document.querySelectorAll(".habit.active").length;
+    const percent = (completed / total) * 360;
+
+    circle.style.background = `conic-gradient(red ${percent}deg, #ccc ${percent}deg)`;
+}
+
+// Click to toggle habits
+habits.forEach((habit, index) => {
+    habit.addEventListener("click", () => {
+        habit.classList.toggle("active");
+        updateProgress();
+
+        // Save state
+        localStorage.setItem("habit-" + index, habit.classList.contains("active"));
+    });
+
+    // Load saved state
+    if (localStorage.getItem("habit-" + index) === "true") {
+        habit.classList.add("active");
+    }
+});
+
+// Initial draw
+updateProgress();
+
+// Click events to edit timeline
+document.querySelectorAll(".event").forEach(event => {
+    event.addEventListener("click", () => {
+        const text = prompt("Edit event:", event.textContent);
+        if (text !== null) event.textContent = text;
+    });
+});
+</script>
+
+</body>
+</html>
