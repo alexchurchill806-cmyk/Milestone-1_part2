@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Weekly Schedule</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #1e1e1e;
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .wrapper {
+        width: 100%;
+        max-width: 1100px;
+    }
+
+    .schedule {
+        display: grid;
+        grid-template-columns: 80px repeat(5, 1fr);
+        background: #e6cfc6;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .cell {
+        border: 1px solid rgba(0,0,0,0.2);
+        padding: 10px;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .cell:hover {
+        background: #f2ded7;
+    }
+
+    .header {
+        font-weight: bold;
+        background: rgba(0,0,0,0.05);
+        cursor: default;
+    }
+
+    .time {
+        font-weight: bold;
+        background: rgba(0,0,0,0.03);
+        cursor: default;
+    }
+
+    .footer {
+        font-weight: bold;
+        background: rgba(0,0,0,0.05);
+        cursor: default;
+    }
+
+    @media (max-width: 768px) {
+        .schedule {
+            grid-template-columns: 60px repeat(5, minmax(120px, 1fr));
+            overflow-x: auto;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+<div class="schedule" id="schedule">
+
+    <!-- Header -->
+    <div class="cell header">TIME</div>
+    <div class="cell header">Monday</div>
+    <div class="cell header">Tuesday</div>
+    <div class="cell header">Wednesday</div>
+    <div class="cell header">Thursday</div>
+    <div class="cell header">Friday</div>
+
+</div>
+</div>
+
+<script>
+const schedule = document.getElementById("schedule");
+const times = ["8AM","9AM","10AM","11AM","12PM","1PM","2PM","3PM","4PM","5PM","6PM","7PM"];
+
+// Load saved data
+const savedData = JSON.parse(localStorage.getItem("scheduleData")) || {};
+
+times.forEach((time, rowIndex) => {
+    // Time label
+    const timeCell = document.createElement("div");
+    timeCell.className = "cell time";
+    timeCell.textContent = time;
+    schedule.appendChild(timeCell);
+
+    // 5 days
+    for (let col = 0; col < 5; col++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        const key = `${rowIndex}-${col}`;
+
+        // Load saved content
+        if (savedData[key]) {
+            cell.textContent = savedData[key];
+        }
+
+        // Click to edit
+        cell.addEventListener("click", () => {
+            const current = cell.textContent;
+            const input = prompt("Enter event:", current);
+
+            if (input !== null) {
+                cell.textContent = input;
+                savedData[key] = input;
+                localStorage.setItem("scheduleData", JSON.stringify(savedData));
+            }
+        });
+
+        schedule.appendChild(cell);
+    }
+});
+
+// Footer
+const footerItems = [
+    "MONTHLY VIEW",
+    "PREVIOUS WEEK",
+    "FEB 23 - MARCH 1ST",
+    "NEXT WEEK",
+    "HOME PAGE",
+    ""
+];
+
+footerItems.forEach(text => {
+    const cell = document.createElement("div");
+    cell.className = "cell footer";
+    cell.textContent = text;
+    schedule.appendChild(cell);
+});
+</script>
+
+</body>
+</html>
