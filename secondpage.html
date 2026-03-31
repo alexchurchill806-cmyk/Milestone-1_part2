@@ -57,6 +57,12 @@ body {
     cursor: pointer;
 }
 
+.add-btn {
+    margin-top: 10px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
 /* Habit Checklist */
 .habits {
     display: flex;
@@ -104,6 +110,10 @@ body {
     height: 100px;
     background: #e9e3dc;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
 }
 
 /* Footer */
@@ -120,6 +130,86 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ---------- CHICKEN WIDGET ---------- */
+.chicken-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    cursor: grab;
+    z-index: 9999;
+}
+
+.scene {
+    position: relative;
+    width: 120px;
+    height: 200px;
+}
+
+/* Chicken */
+.chicken {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 55px;
+    background: white;
+    border-radius: 50%;
+    z-index: 2;
+    transition: transform 0.3s ease;
+}
+
+.chicken::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 20px;
+    width: 30px;
+    height: 30px;
+    background: white;
+    border-radius: 50%;
+}
+
+.beak {
+    position: absolute;
+    top: 5px;
+    left: 45px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid orange;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+
+/* Eggs */
+.eggs {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+}
+
+.egg {
+    width: 20px;
+    height: 28px;
+    background: #fff;
+    border-radius: 50% 50% 45% 45%;
+    margin: 2px auto;
+    animation: drop 0.6s ease-out forwards;
+}
+
+@keyframes drop {
+    0% {
+        transform: translateY(-80px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
 </style>
 </head>
 
@@ -130,7 +220,7 @@ body {
     <div class="top">
         <div>
             <div><strong>TODAY'S DASHBOARD</strong></div>
-            <div>FEB 23</div>
+            <div contenteditable="true" id="date">FEB 23</div>
         </div>
         <div><strong>DAILY PROGRESS</strong></div>
     </div>
@@ -138,12 +228,9 @@ body {
     <div class="main">
 
         <!-- Timeline -->
-        <div class="timeline" id="timeline">
-            <div class="time">8AM <span class="event">Event</span></div>
-            <div class="time">10AM</div>
-            <div class="time">12PM <span class="event">Event 2</span></div>
-            <div class="time">2PM</div>
-            <div class="time">4PM</div>
+        <div>
+            <div class="timeline" id="timeline"></div>
+            <button class="add-btn" onclick="addEvent()">+ Add Event</button>
         </div>
 
         <!-- Habits + Progress -->
@@ -160,7 +247,7 @@ body {
 
             <div class="progress">
                 <div class="circle" id="circle">
-                    <div class="inner"></div>
+                    <div class="inner" id="percentText">0%</div>
                 </div>
             </div>
         </div>
@@ -174,43 +261,167 @@ body {
 
 </div>
 
+<!-- Chicken Widget -->
+<div class="chicken-widget" id="chickenWidget">
+  <div class="scene">
+    <div class="chicken">
+      <div class="beak"></div>
+    </div>
+    <div class="eggs" id="eggs"></div>
+  </div>
+</div>
+
 <script>
+// ---------- HABITS ----------
 const habits = document.querySelectorAll(".habit");
 const circle = document.getElementById("circle");
+const percentText = document.getElementById("percentText");
 
 function updateProgress() {
     const total = habits.length;
     const completed = document.querySelectorAll(".habit.active").length;
     const percent = (completed / total) * 360;
+    const percentDisplay = Math.round((completed / total) * 100);
 
     circle.style.background = `conic-gradient(red ${percent}deg, #ccc ${percent}deg)`;
+    percentText.textContent = percentDisplay + "%";
 }
 
-// Click to toggle habits
 habits.forEach((habit, index) => {
     habit.addEventListener("click", () => {
         habit.classList.toggle("active");
         updateProgress();
-
-        // Save state
         localStorage.setItem("habit-" + index, habit.classList.contains("active"));
     });
 
-    // Load saved state
     if (localStorage.getItem("habit-" + index) === "true") {
         habit.classList.add("active");
     }
 });
 
-// Initial draw
 updateProgress();
 
-// Click events to edit timeline
-document.querySelectorAll(".event").forEach(event => {
-    event.addEventListener("click", () => {
-        const text = prompt("Edit event:", event.textContent);
-        if (text !== null) event.textContent = text;
+// ---------- TIMELINE ----------
+const timeline = document.getElementById("timeline");
+
+function saveTimeline() {
+    localStorage.setItem("timeline-data", timeline.innerHTML);
+}
+
+function loadTimeline() {
+    const data = localStorage.getItem("timeline-data");
+    if (data) {
+        timeline.innerHTML = data;
+        attachEventListeners();
+    } else {
+        timeline.innerHTML = `
+            <div class="time">8AM <span class="event">Event</span></div>
+            <div class="time">12PM <span class="event">Lunch</span></div>
+        `;
+        attachEventListeners();
+    }
+}
+
+function attachEventListeners() {
+    document.querySelectorAll(".event").forEach(event => {
+        event.onclick = () => {
+            const text = prompt("Edit event:", event.textContent);
+            if (text === "") {
+                event.remove();
+            } else if (text !== null) {
+                event.textContent = text;
+            }
+            saveTimeline();
+        };
     });
+}
+
+function addEvent() {
+    const time = prompt("Enter time (e.g. 3PM):");
+    const text = prompt("Event name:");
+
+    if (!time || !text) return;
+
+    const div = document.createElement("div");
+    div.className = "time";
+    div.innerHTML = `${time} <span class="event">${text}</span>`;
+    timeline.appendChild(div);
+
+    attachEventListeners();
+    saveTimeline();
+}
+
+loadTimeline();
+
+// ---------- DATE ----------
+const dateEl = document.getElementById("date");
+dateEl.addEventListener("input", () => {
+    localStorage.setItem("date", dateEl.textContent);
+});
+
+const savedDate = localStorage.getItem("date");
+if (savedDate) dateEl.textContent = savedDate;
+
+// ---------- CHICKEN EGGS (STACK + MOVE + RESET) ----------
+const eggsContainer = document.getElementById("eggs");
+const chicken = document.querySelector(".chicken");
+
+let eggCount = 0;
+const maxEggs = 10;
+const liftPerEgg = 5;
+
+function layEgg() {
+    const egg = document.createElement("div");
+    egg.classList.add("egg");
+
+    eggsContainer.insertBefore(egg, eggsContainer.firstChild);
+
+    eggCount++;
+
+    const lift = eggCount * liftPerEgg;
+    chicken.style.transform = `translateX(-50%) translateY(-${lift}px)`;
+
+    if (eggCount < maxEggs) {
+        setTimeout(layEgg, 800);
+    } else {
+        setTimeout(resetEggs, 1200);
+    }
+}
+
+function resetEggs() {
+    eggsContainer.innerHTML = "";
+    eggCount = 0;
+    chicken.style.transform = `translateX(-50%) translateY(0)`;
+    setTimeout(layEgg, 800);
+}
+
+layEgg();
+
+// ---------- DRAG ----------
+const widget = document.getElementById("chickenWidget");
+
+let isDragging = false;
+let offsetX, offsetY;
+
+widget.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    offsetX = e.clientX - widget.offsetLeft;
+    offsetY = e.clientY - widget.offsetTop;
+    widget.style.cursor = "grabbing";
+});
+
+document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+
+    widget.style.left = (e.clientX - offsetX) + "px";
+    widget.style.top = (e.clientY - offsetY) + "px";
+    widget.style.bottom = "auto";
+    widget.style.right = "auto";
+});
+
+document.addEventListener("mouseup", () => {
+    isDragging = false;
+    widget.style.cursor = "grab";
 });
 </script>
 
